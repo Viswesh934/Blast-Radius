@@ -1,0 +1,12 @@
+openmetadata:
+  baseurl: "http://localhost:8585/api/v1"
+  jwt_token: ""
+
+database:
+  fqn: "postgres_default.public"
+
+snapshot:
+  directory: "./snapshots"
+
+output:
+  format: "table"
