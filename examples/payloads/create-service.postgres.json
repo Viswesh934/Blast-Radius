@@ -1,0 +1,14 @@
+{
+  "name": "analytics_service",
+  "serviceType": "Postgres",
+  "description": "Postgres service created via blast wrapper",
+  "connection": {
+    "config": {
+      "type": "Postgres",
+      "hostPort": "localhost:5432",
+      "username": "postgres",
+      "password": "postgres",
+      "database": "postgres"
+    }
+  }
+}

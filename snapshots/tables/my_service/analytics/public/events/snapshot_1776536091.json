@@ -1,0 +1,21 @@
+{
+  "id": "snap_1776536091336222198",
+  "timestamp": "2026-04-18T18:14:51.336245832Z",
+  "source": "my_service.analytics.public.events",
+  "tables": {
+    "my_service.analytics.public.events": {
+      "fqn": "my_service.analytics.public.events",
+      "name": "events",
+      "description": "Updated by blast tables update",
+      "owner": "",
+      "columns": {},
+      "updated": "2026-04-18T18:03:18.585Z",
+      "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "lineage": {},
+  "metadata": {
+    "parent_source": "my_service.analytics.public",
+    "version": "0.1.0"
+  }
+}

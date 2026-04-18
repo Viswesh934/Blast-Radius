@@ -1,0 +1,13 @@
+[
+  {
+    "op": "add",
+    "path": "/sampleData",
+    "value": {
+      "columns": ["event_id", "event_name"],
+      "rows": [
+        ["1", "signup"],
+        ["2", "purchase"]
+      ]
+    }
+  }
+]

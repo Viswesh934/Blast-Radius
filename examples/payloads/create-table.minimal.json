@@ -1,0 +1,16 @@
+{
+  "name": "events",
+  "databaseSchema": "analytics_service.analytics.public",
+  "description": "Minimal table create payload",
+  "columns": [
+    {
+      "name": "event_id",
+      "dataType": "INT",
+      "description": "Primary identifier"
+    },
+    {
+      "name": "event_name",
+      "dataType": "STRING"
+    }
+  ]
+}

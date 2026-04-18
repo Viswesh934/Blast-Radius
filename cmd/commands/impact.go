@@ -1,9 +1,7 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/Viswesh934/blast-radius/internal/impact"
 	"github.com/Viswesh934/blast-radius/internal/snapshot"
@@ -28,13 +26,8 @@ var impactCmd = &cobra.Command{
 		diff := snapshot.CompareSnapshots(previous, current)
 		analysis := impact.AnalyzeImpact(current, diff.Changes)
 
-		if strings.EqualFold(cfg.Output.Format, "json") {
-			payload, err := json.MarshalIndent(analysis, "", "  ")
-			if err != nil {
-				return fmt.Errorf("marshal impact: %w", err)
-			}
-			fmt.Println(string(payload))
-			return nil
+		if wantsJSONOutput() {
+			return printStructured(map[string]any{"impact": analysis})
 		}
 
 		fmt.Printf("risk_level: %s\n", analysis.RiskLevel)

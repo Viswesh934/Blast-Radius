@@ -1,9 +1,7 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/Viswesh934/blast-radius/internal/snapshot"
 	"github.com/spf13/cobra"
@@ -25,13 +23,8 @@ var compareCmd = &cobra.Command{
 		}
 
 		diff := snapshot.CompareSnapshots(previous, current)
-		if strings.EqualFold(cfg.Output.Format, "json") {
-			payload, err := json.MarshalIndent(diff, "", "  ")
-			if err != nil {
-				return fmt.Errorf("marshal diff: %w", err)
-			}
-			fmt.Println(string(payload))
-			return nil
+		if wantsJSONOutput() {
+			return printStructured(map[string]any{"diff": diff})
 		}
 
 		fmt.Println("Change summary:")

@@ -1,0 +1,11 @@
+version: v1
+domain: analytics
+
+drift:
+  fail_on: warning
+  max_total: 5
+
+contracts:
+  min_score: 85
+  require_owner: false
+  require_table_description: true

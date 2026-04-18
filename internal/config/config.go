@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
+	"github.com/subosito/gotenv"
 )
 
 type Config struct {
@@ -32,6 +33,9 @@ type OutputConfig struct {
 }
 
 func Load(cfgFile string) (*Config, error) {
+	// Best-effort .env load so local runs pick up OM_/BR_ variables automatically.
+	_ = gotenv.Load(".env")
+
 	viper.Reset()
 
 	viper.SetDefault("openmetadata.baseurl", "http://localhost:8585/api/v1")

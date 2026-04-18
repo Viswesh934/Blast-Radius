@@ -1,0 +1,11 @@
+version: v1
+domain: finance
+
+drift:
+  fail_on: critical
+  max_total: 2
+
+contracts:
+  min_score: 95
+  require_owner: true
+  require_table_description: true
