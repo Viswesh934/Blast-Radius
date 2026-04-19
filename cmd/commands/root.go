@@ -44,7 +44,9 @@ func init() {
 	rootCmd.AddCommand(guardCmd)
 	rootCmd.AddCommand(compareCmd)
 	rootCmd.AddCommand(impactCmd)
+	rootCmd.AddCommand(releaseCheckCmd)
 	rootCmd.AddCommand(lineageCmd)
+	rootCmd.AddCommand(mcpCmd)
 	rootCmd.AddCommand(validateCmd)
 }
 

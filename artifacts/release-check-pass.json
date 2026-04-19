@@ -1,0 +1,66 @@
+{
+  "baseline": "snapshots/sources/my_service/analytics/public/snapshot_1776536091.json",
+  "contracts": {
+    "failing_tables": [],
+    "min_score": 0,
+    "overall_score": 0,
+    "pass": true,
+    "policy": {
+      "require_owner": false,
+      "require_table_description": false
+    },
+    "reasons": [],
+    "results": [
+      {
+        "checks": 1,
+        "columns": 0,
+        "issues": [
+          "no columns"
+        ],
+        "pass": true,
+        "passed": 0,
+        "score": 0,
+        "table": "my_service.analytics.public.events"
+      }
+    ]
+  },
+  "current": "snapshots/sources/my_service/analytics/public/snapshot_1776536138.json",
+  "drift": {
+    "affected_tables": 0,
+    "pass": true,
+    "policy": {
+      "fail_on": "CRITICAL",
+      "max_total": -1
+    },
+    "reasons": [],
+    "severity_counts": {
+      "CRITICAL": 0,
+      "INFO": 0,
+      "WARNING": 0
+    },
+    "summary": {
+      "ADDED": 0,
+      "DELETED": 0,
+      "MODIFIED": 0
+    },
+    "total_changes": 0
+  },
+  "gate": "release-check",
+  "impact": {
+    "impacted_assets": 0,
+    "max_risk": "HIGH",
+    "pass": true,
+    "policy": {
+      "max_impacted_assets": -1
+    },
+    "reasons": [],
+    "recommended_actions": [
+      "No action required"
+    ],
+    "risk_level": "LOW"
+  },
+  "pass": true,
+  "profile": "",
+  "reasons": [],
+  "status": "PASS"
+}
