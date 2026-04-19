@@ -1,0 +1,55 @@
+name: Metadata Release Gate
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      baseline_snapshot:
+        description: "Path to baseline snapshot JSON"
+        required: true
+        default: "snapshots/sources/my_service/analytics/public/snapshot_1776536091.json"
+      source_fqn:
+        description: "OpenMetadata source FQN for live current snapshot"
+        required: true
+        default: "my_service.analytics.public"
+
+jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+    env:
+      OM_BASE_URL: ${{ secrets.OM_BASE_URL }}
+      OM_JWT_TOKEN: ${{ secrets.OM_JWT_TOKEN }}
+      BR_DATABASE_FQN: ${{ github.event.inputs.source_fqn || vars.BR_DATABASE_FQN }}
+      BASELINE_SNAPSHOT: ${{ github.event.inputs.baseline_snapshot || vars.BASELINE_SNAPSHOT }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build Blast Radius
+        run: |
+          go mod tidy
+          go build -o bin/blast ./cmd
+
+      - name: Run Release Gate
+        run: |
+          mkdir -p artifacts
+          ./bin/blast release-check \
+            --baseline "${BASELINE_SNAPSHOT}" \
+            --source "${BR_DATABASE_FQN}" \
+            --profile profiles/guard/analytics.guard.yaml \
+            --max-risk high \
+            --report-file artifacts/release-check.json \
+            --markdown-file artifacts/release-check.md
+
+      - name: Upload Gate Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blast-release-gate
+          path: artifacts/

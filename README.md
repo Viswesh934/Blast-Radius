@@ -36,6 +36,8 @@ blast guard profile show profiles/guard/analytics.guard.yaml
 blast lineage <entity-fqn>
 blast compare <older-snapshot.json> <newer-snapshot.json>
 blast impact <older-snapshot.json> <newer-snapshot.json>
+blast release-check --baseline snapshots/sources/my_service/analytics/public/snapshot_1776536091.json --source my_service.analytics.public --profile profiles/guard/analytics.guard.yaml
+blast mcp
 blast create service --name my_service --type Postgres
 blast create database --name analytics --service my_service
 blast create schema --name public --database my_service.analytics
@@ -185,6 +187,15 @@ ln -sf "$PWD/bin/blast-radius" "$HOME/.local/bin/blast"
 # 5. Analyze impact from differences
 ./bin/blast impact snapshots/older.json snapshots/newer.json
 
+# 5b. Run a CI-friendly release gate check
+./bin/blast release-check \
+	--baseline snapshots/sources/my_service/analytics/public/snapshot_1776536091.json \
+	--source my_service.analytics.public \
+	--profile profiles/guard/analytics.guard.yaml \
+	--max-risk high \
+	--report-file artifacts/release-check.json \
+	--markdown-file artifacts/release-check.md
+
 # 6. Inspect lineage for an entity directly from OpenMetadata
 ./bin/blast lineage service.db.schema.table_name
 
@@ -194,7 +205,69 @@ ln -sf "$PWD/bin/blast-radius" "$HOME/.local/bin/blast"
 ./bin/blast tables add-data analytics_service.analytics.public.events --body-file examples/payloads/table-sample-data.patch.json
 ./bin/blast tables update analytics_service.analytics.public.events --body-file table-update.json
 ./bin/blast tables delete analytics_service.analytics.public.events
+
+# 8. Run as an MCP server for AI agents and ingestion clients
+./bin/blast mcp --ingestion-dir ./snapshots/ingestion
 ```
+
+## MCP Server + Ingestion Pipeline
+
+Blast Radius can run as an MCP server over stdio so external agents and automation can trigger metadata workflows in real time.
+
+Start server:
+
+```bash
+./bin/blast mcp --ingestion-dir ./snapshots/ingestion
+```
+
+Exposed MCP tools:
+
+- `blast.snapshot.capture`: create a new snapshot from OpenMetadata.
+- `blast.snapshot.compare`: compare two snapshot files.
+- `blast.impact.analyze`: compute downstream impact between snapshots.
+- `blast.ingest.event`: append a real-time event into the ingestion queue.
+- `blast.ingest.flush`: flush queued events for a source, capture a snapshot, compare against a baseline, and emit an impact report.
+
+Ingestion outputs:
+
+- Event log: `snapshots/ingestion/events.ndjson`
+- Flush reports: `snapshots/ingestion/reports/report_<timestamp>.json`
+
+Notes:
+
+- `blast.ingest.event` requires `type` and `source_fqn`.
+- `blast.ingest.flush` can take an explicit `baseline_snapshot`; if omitted, it uses the latest prior snapshot for that source.
+- If no baseline snapshot exists, flush still captures a fresh snapshot and returns a message indicating compare/impact was skipped.
+
+## CI/CD Release Gate
+
+Use `release-check` to gate deploys and pull requests with one deterministic command.
+
+Example:
+
+```bash
+./bin/blast release-check \
+	--baseline snapshots/sources/my_service/analytics/public/snapshot_1776536091.json \
+	--source my_service.analytics.public \
+	--profile profiles/guard/analytics.guard.yaml \
+	--max-risk high \
+	--max-impacted-assets 20 \
+	--report-file artifacts/release-check.json \
+	--markdown-file artifacts/release-check.md
+```
+
+Behavior:
+
+- Runs drift policy checks (`fail_on`, `max_total`).
+- Runs contract readiness checks (`min_score`, owner/description policy).
+- Runs impact checks (`max_risk`, optional `max_impacted_assets`).
+- Exits non-zero when any policy check fails.
+
+GitHub Actions workflow:
+
+- See `.github/workflows/metadata-release-gate.yml`.
+- Configure repository secrets: `OM_BASE_URL`, `OM_JWT_TOKEN`.
+- Configure repository variables: `BR_DATABASE_FQN`, `BASELINE_SNAPSHOT`.
 
 ## Notes
 
@@ -216,3 +289,4 @@ ln -sf "$PWD/bin/blast-radius" "$HOME/.local/bin/blast"
 - Use `blast api` for operations that are not yet wrapped by dedicated commands.
 - The effort and roadmap discussion lives in [docs/openmetadata-wrapper-effort.md](docs/openmetadata-wrapper-effort.md).
 - The effort-1 validation checklist lives in [docs/effort1-smoke-checklist.md](docs/effort1-smoke-checklist.md).
+- The effort-2 release gate checklist lives in [docs/effort2-release-gate-checklist.md](docs/effort2-release-gate-checklist.md).

@@ -68,7 +68,8 @@ Once the wrapper is stable, the project can evolve in one or more of these direc
 Effort notes:
 
 - Effort 1 now includes profile-based guard policies and profile validation/show commands.
-- Effort 2 will focus on MCP exposure so agents can execute the same guard workflows.
+- Effort 2 now includes MCP exposure and a CI/CD-focused `release-check` gate command with workflow artifacts.
+- Effort 3 will focus on packaging/distribution and broader connector coverage.
 
 ## Operational Notes
 
