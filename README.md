@@ -1,6 +1,23 @@
 # Blast Radius
 
-Blast Radius is an OpenMetadata-focused CLI for metadata snapshotting, lineage lookup, change comparison, and downstream impact analysis.
+Blast Radius is a CLI + MCP toolkit for continuous metadata operations: ingest, snapshot, drift detection, impact analysis, and release gating.
+
+## Pain Points This Solves
+
+- External data APIs change silently and break downstream jobs unexpectedly.
+- Teams notice schema drift too late, after dashboards or pipelines fail.
+- Metadata onboarding into catalogs is manual and inconsistent.
+- AI agents can reason about code, but often cannot execute governed metadata workflows.
+- Release decisions are made without a deterministic metadata safety check.
+
+## How Blast Radius Helps
+
+- Ingests records from public web JSON sources into local DB storage.
+- Infers fields automatically and syncs metadata into OpenMetadata.
+- Captures snapshots over time and compares drift between runs.
+- Computes impact/risk to explain what changed and what might break.
+- Exposes the same workflows through MCP so AI agents can execute them directly.
+- Provides CI-friendly release checks with fail/pass artifacts.
 
 ## What It Does
 
@@ -12,6 +29,61 @@ Blast Radius is an OpenMetadata-focused CLI for metadata snapshotting, lineage l
 - Creates OpenMetadata services, databases, and schemas from CLI.
 - Creates OpenMetadata tables, glossaries, and glossary terms from CLI.
 - Supports direct OpenMetadata API calls for advanced operations.
+
+## Demo Playbook (Copy/Paste)
+
+This is the fastest end-to-end demo sequence.
+
+```bash
+# 1) Build
+go build -o bin/blast ./cmd
+
+# 2) Validate OpenMetadata connectivity
+./bin/blast validate
+
+# 3) Run guided ingest (best for demos)
+./bin/blast ingest wizard
+
+# 4) Or run non-interactive ingest from a drifting source
+./bin/blast ingest web \
+	--url https://api.github.com/events \
+	--count 100 \
+	--table github_events \
+	--service <existing_service> \
+	--database webdb \
+	--schema public \
+	--source <existing_service>.webdb.public
+
+# 5) Re-run later (same command) to produce drift against previous snapshot
+./bin/blast ingest web \
+	--url https://api.github.com/events \
+	--count 100 \
+	--table github_events \
+	--service <existing_service> \
+	--database webdb \
+	--schema public \
+	--source <existing_service>.webdb.public
+
+# 6) Optional explicit compare + impact
+./bin/blast compare <older_snapshot.json> <newer_snapshot.json>
+./bin/blast impact <older_snapshot.json> <newer_snapshot.json>
+```
+
+## MCP Demo (AI Agent Flow)
+
+```bash
+# Start MCP server
+./bin/blast mcp --ingestion-dir ./snapshots/ingestion
+
+# In another terminal: run MCP smoke/demo client
+python3 examples/mcp_demo.py --run-web-sync --service <existing_service>
+```
+
+What this demonstrates:
+
+- Service discovery for valid OpenMetadata targets.
+- Agent-driven web ingest and metadata sync.
+- Snapshot drift output that can be used for release decisions.
 
 ## Commands
 
@@ -36,6 +108,9 @@ blast guard profile show profiles/guard/analytics.guard.yaml
 blast lineage <entity-fqn>
 blast compare <older-snapshot.json> <newer-snapshot.json>
 blast impact <older-snapshot.json> <newer-snapshot.json>
+blast demo
+blast ingest web --url https://jsonplaceholder.typicode.com/posts --table posts --service web_service --database webdb --schema public
+blast ingest wizard
 blast release-check --baseline snapshots/sources/my_service/analytics/public/snapshot_1776536091.json --source my_service.analytics.public --profile profiles/guard/analytics.guard.yaml
 blast mcp
 blast create service --name my_service --type Postgres
@@ -139,6 +214,45 @@ Optional local alias if you still build `bin/blast-radius`:
 ln -sf "$PWD/bin/blast-radius" "$HOME/.local/bin/blast"
 ```
 
+## Internet Fetch Library + Demo App
+
+This repo now includes a reusable internet fetch library and a demo app:
+
+- Library package: `pkg/netfetch`
+- Demo executable: `cmd/fetch-demo`
+
+Run the demo app:
+
+```bash
+go run ./cmd/fetch-demo
+```
+
+The demo calls the GitHub API for this repository and prints a JSON summary.
+
+## Web Ingestion To DB + OpenMetadata
+
+Use this when you want end-to-end web metadata ingestion with automatic field inference, local DB writes, OpenMetadata registration, and drift checks.
+
+```bash
+blast ingest web \
+	--url https://jsonplaceholder.typicode.com/posts \
+	--table posts \
+	--service web_service \
+	--database webdb \
+	--schema public
+
+# Guided mode (prompts for URL, records, table, service, database, schema, and snapshot source)
+blast ingest wizard
+```
+
+Notes:
+
+- If `--count` is omitted, Blast asks interactively how many records to ingest.
+- It infers fields from JSON records and creates columns automatically.
+- Records are inserted into SQLite (`--db-file`, default `./artifacts/ingested_web.db`).
+- It ensures service/database/schema/table exist in OpenMetadata, pushes sample data, captures a new snapshot, and compares drift against the previous snapshot for the same source.
+- If the selected OpenMetadata service is missing, Blast shows existing services and asks permission before trying to create a new one (interactive terminals).
+
 ## Typical Workflow
 
 ```bash
@@ -227,6 +341,8 @@ Exposed MCP tools:
 - `blast.impact.analyze`: compute downstream impact between snapshots.
 - `blast.ingest.event`: append a real-time event into the ingestion queue.
 - `blast.ingest.flush`: flush queued events for a source, capture a snapshot, compare against a baseline, and emit an impact report.
+- `blast.openmetadata.services.list`: list available OpenMetadata database services for parameter planning.
+- `blast.ingest.web.sync`: run end-to-end web JSON ingestion (fetch -> infer -> SQLite -> OpenMetadata -> snapshot drift).
 
 Ingestion outputs:
 
@@ -238,6 +354,7 @@ Notes:
 - `blast.ingest.event` requires `type` and `source_fqn`.
 - `blast.ingest.flush` can take an explicit `baseline_snapshot`; if omitted, it uses the latest prior snapshot for that source.
 - If no baseline snapshot exists, flush still captures a fresh snapshot and returns a message indicating compare/impact was skipped.
+- `blast.ingest.web.sync` requires `url`, `table`, `service`, `database`, and `schema`; set `allow_create_service=true` if agents are allowed to create missing services.
 
 ## CI/CD Release Gate
 

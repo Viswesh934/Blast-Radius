@@ -48,6 +48,8 @@ func init() {
 	rootCmd.AddCommand(lineageCmd)
 	rootCmd.AddCommand(mcpCmd)
 	rootCmd.AddCommand(validateCmd)
+	rootCmd.AddCommand(demoCmd)
+	rootCmd.AddCommand(ingestCmd)
 }
 
 func Execute() error {

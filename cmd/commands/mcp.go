@@ -15,7 +15,7 @@ var mcpIngestionDir string
 var mcpCmd = &cobra.Command{
 	Use:   "mcp",
 	Short: "Run Blast Radius as an MCP server over stdio",
-	Long:  "Starts a Model Context Protocol server that exposes Blast Radius snapshot, compare, impact, and ingestion tools.",
+	Long:  "Starts a Model Context Protocol server that exposes Blast Radius snapshot, compare, impact, event ingestion, web ingestion sync, and service discovery tools.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		logger, _ := zap.NewProduction()
 		defer func() {

@@ -1,0 +1,53 @@
+{
+  "id": "snap_1776786993457403657",
+  "timestamp": "2026-04-21T15:56:33.457405029Z",
+  "source": "postgres_default.webdb.public",
+  "tables": {
+    "postgres_default.webdb.public.posts": {
+      "fqn": "postgres_default.webdb.public.posts",
+      "name": "posts",
+      "description": "Ingested via wizard",
+      "owner": "",
+      "columns": {
+        "body": {
+          "name": "body",
+          "data_type": "STRING",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "99417bc7eff583b83d71dfb4238467284058d79aadd374e98136c630b73a3d9f"
+        },
+        "id": {
+          "name": "id",
+          "data_type": "DOUBLE",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "8410d123632a8c3b801e9470a01e9f218f10d5ee42cc3b2d4293ef45f3f1ce1b"
+        },
+        "title": {
+          "name": "title",
+          "data_type": "STRING",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "2969375599e0355ee4588c7f9ffa6d291662af79e10706625bb5a2c954c352b0"
+        },
+        "userid": {
+          "name": "userid",
+          "data_type": "DOUBLE",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "cd34a420f2917b373d79ddddf77cdac5ed7a4ee29630b8d8f08115b30a85baeb"
+        }
+      },
+      "updated": "2026-04-21T15:53:50.226Z",
+      "hash": "38c29b01da5d08d8debca66d0f2aa0c73afdf43e78870ad64bc061a202f6cbb6"
+    }
+  },
+  "lineage": {},
+  "metadata": {
+    "version": "0.1.0"
+  }
+}

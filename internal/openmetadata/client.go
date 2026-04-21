@@ -375,6 +375,8 @@ func (c *Client) UpdateTable(ctx context.Context, tableFQN, method string, paylo
 		switch payload.(type) {
 		case []any:
 			req.SetHeader("Content-Type", "application/json-patch+json")
+		case []map[string]any:
+			req.SetHeader("Content-Type", "application/json-patch+json")
 		}
 	}
 

@@ -89,6 +89,13 @@ def main():
         default=str(default_newer),
         help="Newer snapshot path",
     )
+    parser.add_argument("--service", default="", help="OpenMetadata service name for web sync demo")
+    parser.add_argument("--database", default="webdb", help="OpenMetadata database name for web sync demo")
+    parser.add_argument("--schema", default="public", help="OpenMetadata schema name for web sync demo")
+    parser.add_argument("--table", default="github_events_mcp", help="OpenMetadata table name for web sync demo")
+    parser.add_argument("--web-url", default="https://api.github.com/events", help="Public JSON URL for web sync demo")
+    parser.add_argument("--web-count", type=int, default=25, help="Record count for web sync demo")
+    parser.add_argument("--run-web-sync", action="store_true", help="Run blast.ingest.web.sync after discovery tools")
     args = parser.parse_args()
 
     bin_path = resolve_input_path(args.bin, repo_root)
@@ -131,6 +138,20 @@ def main():
 
         tools_resp = call(proc, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
         print_step("2) tools/list", tools_resp)
+
+        services_resp = call(
+            proc,
+            {
+                "jsonrpc": "2.0",
+                "id": 21,
+                "method": "tools/call",
+                "params": {
+                    "name": "blast.openmetadata.services.list",
+                    "arguments": {},
+                },
+            },
+        )
+        print_step("2b) blast.openmetadata.services.list", services_resp)
 
         ingest_resp = call(
             proc,
@@ -184,6 +205,31 @@ def main():
             },
         )
         print_step("5) blast.impact.analyze", impact_resp)
+
+        if args.run_web_sync:
+            service_name = args.service or "postgres_default"
+            web_sync_resp = call(
+                proc,
+                {
+                    "jsonrpc": "2.0",
+                    "id": 6,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "blast.ingest.web.sync",
+                        "arguments": {
+                            "url": args.web_url,
+                            "count": args.web_count,
+                            "table": args.table,
+                            "service": service_name,
+                            "database": args.database,
+                            "schema": args.schema,
+                            "source_fqn": f"{service_name}.{args.database}.{args.schema}",
+                            "allow_create_service": False,
+                        },
+                    },
+                },
+            )
+            print_step("6) blast.ingest.web.sync", web_sync_resp)
 
         print("\nDemo complete.")
         print("Event log: snapshots/ingestion/events.ndjson")
