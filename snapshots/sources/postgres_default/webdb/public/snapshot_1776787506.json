@@ -1,0 +1,85 @@
+{
+  "id": "snap_1776787506508657724",
+  "timestamp": "2026-04-21T16:05:06.508659778Z",
+  "source": "postgres_default.webdb.public",
+  "tables": {
+    "postgres_default.webdb.public.github_events": {
+      "fqn": "postgres_default.webdb.public.github_events",
+      "name": "github_events",
+      "description": "Ingested from public web JSON",
+      "owner": "",
+      "columns": {
+        "actor": {
+          "name": "actor",
+          "data_type": "STRING",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "7165176d7df35ff386ececd35470e4a5b5577c17c7a7f81b09d3cab7eff1bc53"
+        },
+        "created_at": {
+          "name": "created_at",
+          "data_type": "STRING",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "2e51ee7f542dea9ee5710600893e0485d1ee456c450a05f83967ec70af949fe8"
+        },
+        "id": {
+          "name": "id",
+          "data_type": "STRING",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "189b36a5dbee6c9a32a67bc34a5f585b25863f0ae6c9ee22455c9ff0bd8cbba8"
+        },
+        "org": {
+          "name": "org",
+          "data_type": "STRING",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "627e7df25ccca3797648b1399f93f4226671a4df96dcc31d33e95f04e9687e36"
+        },
+        "payload": {
+          "name": "payload",
+          "data_type": "STRING",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "316f2e6ba2923b71db818af9e74683d4a8accb343a5c7c6c0b107b3f30fcc5b3"
+        },
+        "public": {
+          "name": "public",
+          "data_type": "BOOLEAN",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "a5805b6f200b17f980501c47fc16e959b7acc35eaae1905b5c98c790edc5600a"
+        },
+        "repo": {
+          "name": "repo",
+          "data_type": "STRING",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "2ef46471a15ac616a2632148d45f8161c3963f959ba82808b95a4928c3e7c5c8"
+        },
+        "type": {
+          "name": "type",
+          "data_type": "STRING",
+          "description": "Auto-inferred from web JSON ingest",
+          "nullable": false,
+          "constraints": "",
+          "hash": "dc3df5da6f19dc81ce476bfaa204bd1dc51d4a8a9f9cfbda8788203490505cc2"
+        }
+      },
+      "updated": "2026-04-21T16:04:29.383Z",
+      "hash": "43c2fec58da64f8d6441d86bce76af229ef90909f4f114b7ffd0e4411bc7d7bc"
+    }
+  },
+  "lineage": {},
+  "metadata": {
+    "version": "0.1.0"
+  }
+}
