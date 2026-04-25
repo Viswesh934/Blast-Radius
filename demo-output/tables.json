@@ -1,0 +1,6 @@
+{"level":"info","ts":1777133813.521795,"caller":"cmd/main.go:16","msg":"starting Blast Radius CLI"}
+{
+  "database_fqn": "my_service.my_db.public",
+  "table_count": 0,
+  "tables": []
+}

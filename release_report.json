@@ -1,30 +1,35 @@
 {
-  "baseline": "snapshots/sources/my_service/analytics/public/snapshot_1776536091.json",
+  "baseline": "snapshots/tables/my_service/analytics/public/events/snapshot_1776536091.json",
   "contracts": {
-    "failing_tables": [],
-    "min_score": 0,
-    "overall_score": 0,
-    "pass": true,
+    "failing_tables": [
+      "my_service.analytics.public.events"
+    ],
+    "min_score": 80,
+    "overall_score": 50,
+    "pass": false,
     "policy": {
       "require_owner": false,
-      "require_table_description": false
+      "require_table_description": true
     },
-    "reasons": [],
+    "reasons": [
+      "overall_score=50 below min_score=80",
+      "1 tables below min_score"
+    ],
     "results": [
       {
-        "checks": 1,
+        "checks": 2,
         "columns": 0,
         "issues": [
           "no columns"
         ],
-        "pass": true,
-        "passed": 0,
-        "score": 0,
+        "pass": false,
+        "passed": 1,
+        "score": 50,
         "table": "my_service.analytics.public.events"
       }
     ]
   },
-  "current": "snapshots/sources/my_service/analytics/public/snapshot_1776536138.json",
+  "current": "snapshots/tables/my_service/analytics/public/events/snapshot_1776536138.json",
   "drift": {
     "affected_tables": 0,
     "pass": true,
@@ -48,7 +53,7 @@
   "gate": "release-check",
   "impact": {
     "impacted_assets": 0,
-    "max_risk": "HIGH",
+    "max_risk": "MEDIUM",
     "pass": true,
     "policy": {
       "max_impacted_assets": -1
@@ -59,8 +64,11 @@
     ],
     "risk_level": "LOW"
   },
-  "pass": true,
+  "pass": false,
   "profile": "",
-  "reasons": [],
-  "status": "PASS"
+  "reasons": [
+    "overall_score=50 below min_score=80",
+    "1 tables below min_score"
+  ],
+  "status": "FAIL"
 }

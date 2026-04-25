@@ -1,0 +1,8 @@
+{"level":"info","ts":1777133811.1122153,"caller":"cmd/main.go:16","msg":"starting Blast Radius CLI"}
+{
+  "base_url": "https://wysbryx-com.free-1.getcollate.cloud/api/v1",
+  "database_fqn": "postgres_default.public",
+  "database_services_visible": 1,
+  "openmetadata_status": "ok",
+  "tables_visible": 0
+}

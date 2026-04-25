@@ -1,0 +1,13 @@
+{"level":"info","ts":1777133812.186252,"caller":"cmd/main.go:16","msg":"starting Blast Radius CLI"}
+{
+  "service_count": 1,
+  "services": [
+    {
+      "id": "486f4e70-4982-4cea-aecd-a79061bdb6d0",
+      "name": "postgres_default",
+      "fullyQualifiedName": "postgres_default",
+      "serviceType": "SQLite",
+      "description": "Auto-created by blast ingest web"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "snap_1777133852314155586",
+  "timestamp": "2026-04-25T16:17:32.314157289Z",
+  "source": "postgres_default.public",
+  "tables": {},
+  "lineage": {},
+  "metadata": {
+    "version": "0.1.0"
+  }
+}

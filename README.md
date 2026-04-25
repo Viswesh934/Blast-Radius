@@ -1,34 +1,210 @@
-# Blast Radius
+# Blast Radius 🎯
 
-Blast Radius is a CLI + MCP toolkit for continuous metadata operations: ingest, snapshot, drift detection, impact analysis, and release gating.
+> **Continuous metadata operations for safer, smarter data releases**
 
-## Pain Points This Solves
+Blast Radius is a CLI + MCP toolkit that captures metadata snapshots, detects drift, analyzes impact, and enforces policies—enabling teams to catch schema changes *before* they break production jobs.
 
-- External data APIs change silently and break downstream jobs unexpectedly.
-- Teams notice schema drift too late, after dashboards or pipelines fail.
-- Metadata onboarding into catalogs is manual and inconsistent.
-- AI agents can reason about code, but often cannot execute governed metadata workflows.
-- Release decisions are made without a deterministic metadata safety check.
+**Use it to:**
+- 📸 Capture point-in-time metadata snapshots from OpenMetadata
+- 🔍 Compare snapshots to detect schema drift automatically
+- 📊 Analyze downstream impact of metadata changes
+- 🛡️ Enforce release policies before deployments 
+- 🤖 Expose workflows to AI agents via MCP protocol
+- 🔄 Ingest public APIs, auto-infer schema, sync to OpenMetadata
+- 📈 Maintain lineage and governance across metadata lifecycle
 
-## How Blast Radius Helps
+---
 
-- Ingests records from public web JSON sources into local DB storage.
-- Infers fields automatically and syncs metadata into OpenMetadata.
-- Captures snapshots over time and compares drift between runs.
-- Computes impact/risk to explain what changed and what might break.
-- Exposes the same workflows through MCP so AI agents can execute them directly.
-- Provides CI-friendly release checks with fail/pass artifacts.
+## 🤔 The Problem
 
-## What It Does
+**Data teams face three core challenges:**
 
-- Connects directly to OpenMetadata APIs.
-- Captures metadata snapshots for a database FQN.
-- Compares two snapshots to identify added, deleted, and modified entities.
-- Computes downstream impact and risk level from detected changes.
-- Fetches lineage for a live OpenMetadata entity.
-- Creates OpenMetadata services, databases, and schemas from CLI.
-- Creates OpenMetadata tables, glossaries, and glossary terms from CLI.
-- Supports direct OpenMetadata API calls for advanced operations.
+| Challenge | Effect | Blast Radius Solution |
+|-----------|--------|----------------------|
+| **Silent API changes** | External APIs evolve without notice, breaking downstream jobs | Snapshot + compare to detect changes immediately |
+| **Late drift discovery** | Schema breaks go unnoticed until dashboards/pipelines fail in prod | Drift detection gates catch issues before release |
+| **Manual metadata ops** | Onboarding, governance, and lineage tracking require manual effort | Automation + policies ensure consistency |
+| **AI + metadata gap** | AI agents can reason about code but can't safely execute metadata workflows | MCP protocol enables governed agent access |
+
+**Result:** Unplanned downtime, broken dashboards, failed ETL jobs, and emergency hotfixes.
+
+**Blast Radius Solution:** Deterministic, policy-driven metadata validation at every stage.
+
+---
+
+## 🎯 What It Does (Core Features)
+
+### 1. **Metadata Snapshots**
+Capture a point-in-time JSON snapshot of all tables, columns, descriptions, ownership, tags, and lineage for a database.
+```bash
+./bin/blast snapshot --source my_service.my_db.public
+# Saves to: snapshots/sources/my_service/my_db/public/snapshot_<timestamp>.json
+```
+
+### 2. **Drift Detection**
+Compare two snapshots to identify added, deleted, modified tables/columns with severity levels.
+```bash
+./bin/blast compare snapshot_old.json snapshot_new.json
+# Shows: added=2, deleted=1, modified=3 changes with CRITICAL/WARNING/INFO severity
+```
+
+### 3. **Impact Analysis**
+Compute downstream risk: which tables/dashboards/pipelines are affected by detected changes.
+```bash
+./bin/blast impact snapshot_old.json snapshot_new.json
+# Returns: risk_level, impacted_assets, recommended_actions
+```
+
+### 4. **Release Safety Gate**
+All-in-one pre-deployment check: drift + impact + metadata completeness with exit codes for CI/CD.
+```bash
+./bin/blast release-check --baseline snap1.json --current snap2.json --profile guard.yaml
+# Exits 0 (pass/approved) or 1 (fail/blocked) for pipeline gates
+```
+
+### 5. **Web API Ingestion**
+Fetch records from public JSON APIs, auto-infer column types, load to SQLite, publish to OpenMetadata, and detect schema drift on repeat runs.
+```bash
+./bin/blast ingest web --url https://api.github.com/events --count 100 --service web_service --database webdb --schema public
+```
+
+### 6. **Policy Enforcement**
+Define metadata guards (YAML profiles) that fail releases on violations: drift severity, change counts, missing metadata.
+```yaml
+# profiles/guard/analytics.guard.yaml
+drift:
+  failOn: critical        # Fail only on CRITICAL severity
+  maxTotal: 5             # Allow max 5 total changes
+contracts:
+  minScore: 80            # Metadata completeness score 0-100
+  requireOwner: true      # Owner field required
+  requireTableDescription: true
+```
+
+### 7. **Lineage Inspection**
+Fetch upstream (sources) and downstream (consumers) dependencies for any table.
+```bash
+./bin/blast lineage my_service.my_db.public.my_table
+```
+
+### 8. **AI Agent Access (MCP)**
+Expose all workflows via Model Context Protocol for AI agents to autonomously manage metadata.
+```bash
+./bin/blast mcp --ingestion-dir ./snapshots/ingestion
+# Agents can: discover services, ingest data, detect drift, analyze impact
+```
+
+---
+
+## 🏗️ Architecture & Tech Stack
+
+### **Technology Choices**
+- **Language:** Go (fast, single binary, easy deployment)
+- **CLI:** Cobra framework (battle-tested command parsing)
+- **OpenMetadata Client:** Direct HTTP REST API calls + JWT auth
+- **Storage:** SQLite 3 (web ingestion data) + JSON files (snapshots)
+- **Config:** Viper (env vars + YAML config files)
+- **AI Integration:** Model Context Protocol (stdio-based)
+
+### **System Architecture**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   USER / AI AGENT                       │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+        ┌──────────────┼──────────────┐
+        │              │              │
+        ▼              ▼              ▼
+    ┌────────┐  ┌────────────┐  ┌────────┐
+    │  CLI   │  │  MCP Server│  │ Config │
+    │Commands│  │ (AI Agents)│  │ Files  │
+    └────┬───┘  └─────┬──────┘  └────────┘
+         │            │
+         └─────┬──────┘
+               │
+               ▼
+    ┌──────────────────────────┐
+    │   Blast Radius Core      │
+    │  ─────────────────────   │
+    │ • Snapshot Handler       │
+    │ • Diff/Compare Engine    │
+    │ • Impact Analyzer        │
+    │ • Policy Enforcer        │
+    │ • Web Ingest Orchestrator│
+    └────────┬─────────────────┘
+             │
+    ┌────────┴──────────────┐
+    │                       │
+    ▼                       ▼
+┌──────────────┐    ┌────────────────────┐
+│ OpenMetadata │    │  SQLite / JSON     │
+│   (remote)   │    │  (local storage)   │
+└──────────────┘    └────────────────────┘
+```
+
+### **Command Flow Example: Release Gate**
+
+```
+User: ./bin/blast release-check --baseline snap1.json --current snap2.json
+
+1. Load Snapshots
+   ├─ Parse snap1.json (baseline state)
+   └─ Parse snap2.json (current state)
+
+2. Detect Drift
+   ├─ Compare tables/columns/descriptions
+   ├─ Assign severity (INFO/WARNING/CRITICAL)
+   └─ Count changes by type
+
+3. Analyze Impact
+   ├─ Fetch lineage for affected entities
+   ├─ Compute risk level (LOW/MEDIUM/HIGH/CRITICAL)
+   └─ Identify downstream assets
+
+4. Check Contracts
+   ├─ Count metadata completeness scores
+   ├─ Verify required fields (owner, description)
+   └─ Calculate quality percentage
+
+5. Decide Release
+   ├─ Apply policy profile rules
+   ├─ Compare against thresholds
+   └─ Generate report (JSON + Markdown)
+
+6. Exit with Code
+   ├─ 0 = PASS (release approved)
+   └─ 1 = FAIL (release blocked)
+```
+
+### **Data Flow: Web Ingestion**
+
+```
+Public JSON API → Fetch Records → Infer Schema
+                                      ↓
+                            ┌─────────────────┐
+                            │  SQLite DB      │
+                            │  (local copy)   │
+                            └────────┬────────┘
+                                     ↓
+                        Auto-Create Metadata
+                        (tables, columns, types)
+                                     ↓
+                            ┌─────────────────┐
+                            │ OpenMetadata    │
+                            │ (sync metadata) │
+                            └────────┬────────┘
+                                     ↓
+                          Capture Snapshot
+                            (point-in-time)
+                                     ↓
+                        Compare vs Previous
+                          (detect drift)
+```
+
+---
+
+## 🚀 Getting Started (5 Minutes)
 
 ## Demo Playbook (Copy/Paste)
 

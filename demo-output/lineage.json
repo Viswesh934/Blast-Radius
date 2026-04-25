@@ -1,0 +1,13 @@
+{"level":"info","ts":1777133814.2254171,"caller":"cmd/main.go:16","msg":"starting Blast Radius CLI"}
+Error: fetch lineage from openmetadata: fetch lineage failed: status=400 code=400 message=[query param downstreamDepth must be less than or equal to 3, query param upstreamDepth must be less than or equal to 3]
+Usage:
+  blast lineage <entity-fqn> [flags]
+
+Flags:
+  -h, --help   help for lineage
+
+Global Flags:
+      --config string   path to config file
+      --output string   output format override (table or json)
+
+2026/04/25 16:16:54 fetch lineage from openmetadata: fetch lineage failed: status=400 code=400 message=[query param downstreamDepth must be less than or equal to 3, query param upstreamDepth must be less than or equal to 3]
