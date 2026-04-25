@@ -1,0 +1,6 @@
+{"level":"info","ts":1777133814.8609793,"caller":"cmd/main.go:16","msg":"starting Blast Radius CLI"}
+snapshot_id: snap_1777133814861721258
+tables: 0
+lineage_items: 0
+file: snapshots/sources/my_service/my_db/public/snapshot_1777133814.json
+table_snapshot_files: 0

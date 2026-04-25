@@ -1,0 +1,12 @@
+{"level":"info","ts":1777133815.5367708,"caller":"cmd/main.go:16","msg":"starting Blast Radius CLI"}
+OpenMetadata service "my_service" was not found.
+Existing services: postgres_default
+Create this service now [y/N]: web ingestion completed
+url: https://api.github.com/events
+records_requested: 50
+records_ingested: 30
+db_file: ./artifacts/ingested_web.db
+openmetadata_table: my_service.webdb.public.demo_events
+openmetadata_table_status: created
+sample_data_status: updated
+drift_status: baseline_created (no previous snapshot found)

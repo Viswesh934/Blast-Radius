@@ -1,0 +1,5 @@
+{"level":"info","ts":1777133812.8443556,"caller":"cmd/main.go:16","msg":"starting Blast Radius CLI"}
+{
+  "database_count": 0,
+  "databases": []
+}

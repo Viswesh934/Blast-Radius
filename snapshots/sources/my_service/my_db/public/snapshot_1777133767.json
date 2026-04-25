@@ -1,0 +1,10 @@
+{
+  "id": "snap_1777133767858040704",
+  "timestamp": "2026-04-25T16:16:07.858059239Z",
+  "source": "my_service.my_db.public",
+  "tables": {},
+  "lineage": {},
+  "metadata": {
+    "version": "0.1.0"
+  }
+}

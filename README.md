@@ -1,409 +1,685 @@
-# Blast Radius
+# Blast Radius 🎯
 
-Blast Radius is a CLI + MCP toolkit for continuous metadata operations: ingest, snapshot, drift detection, impact analysis, and release gating.
+> **Continuous metadata operations for safer, smarter data releases**
 
-## Pain Points This Solves
+Blast Radius is a CLI + MCP toolkit that captures metadata snapshots, detects drift, analyzes impact, and enforces policies—enabling teams to catch schema changes *before* they break production jobs.
 
-- External data APIs change silently and break downstream jobs unexpectedly.
-- Teams notice schema drift too late, after dashboards or pipelines fail.
-- Metadata onboarding into catalogs is manual and inconsistent.
-- AI agents can reason about code, but often cannot execute governed metadata workflows.
-- Release decisions are made without a deterministic metadata safety check.
+**Use it to:**
+- 📸 Capture point-in-time metadata snapshots from OpenMetadata
+- 🔍 Compare snapshots to detect schema drift automatically
+- 📊 Analyze downstream impact of metadata changes
+- 🛡️ Enforce release policies before deployments 
+- 🤖 Expose workflows to AI agents via MCP protocol
+- 🔄 Ingest public APIs, auto-infer schema, sync to OpenMetadata
+- 📈 Maintain lineage and governance across metadata lifecycle
 
-## How Blast Radius Helps
+---
 
-- Ingests records from public web JSON sources into local DB storage.
-- Infers fields automatically and syncs metadata into OpenMetadata.
-- Captures snapshots over time and compares drift between runs.
-- Computes impact/risk to explain what changed and what might break.
-- Exposes the same workflows through MCP so AI agents can execute them directly.
-- Provides CI-friendly release checks with fail/pass artifacts.
+## 🤔 The Problem
 
-## What It Does
+**Data teams face three core challenges:**
 
-- Connects directly to OpenMetadata APIs.
-- Captures metadata snapshots for a database FQN.
-- Compares two snapshots to identify added, deleted, and modified entities.
-- Computes downstream impact and risk level from detected changes.
-- Fetches lineage for a live OpenMetadata entity.
-- Creates OpenMetadata services, databases, and schemas from CLI.
-- Creates OpenMetadata tables, glossaries, and glossary terms from CLI.
-- Supports direct OpenMetadata API calls for advanced operations.
+| Challenge | Effect | Blast Radius Solution |
+|-----------|--------|----------------------|
+| **Silent API changes** | External APIs evolve without notice, breaking downstream jobs | Snapshot + compare to detect changes immediately |
+| **Late drift discovery** | Schema breaks go unnoticed until dashboards/pipelines fail in prod | Drift detection gates catch issues before release |
+| **Manual metadata ops** | Onboarding, governance, and lineage tracking require manual effort | Automation + policies ensure consistency |
+| **AI + metadata gap** | AI agents can reason about code but can't safely execute metadata workflows | MCP protocol enables governed agent access |
 
-## Demo Playbook (Copy/Paste)
+**Result:** Unplanned downtime, broken dashboards, failed ETL jobs, and emergency hotfixes.
 
-This is the fastest end-to-end demo sequence.
+**Blast Radius Solution:** Deterministic, policy-driven metadata validation at every stage.
+
+---
+
+## 🎯 What It Does (Core Features)
+
+### 1. **Metadata Snapshots**
+Capture a point-in-time JSON snapshot of all tables, columns, descriptions, ownership, tags, and lineage for a database.
+```bash
+./bin/blast snapshot --source my_service.my_db.public
+# Saves to: snapshots/sources/my_service/my_db/public/snapshot_<timestamp>.json
+```
+
+### 2. **Drift Detection**
+Compare two snapshots to identify added, deleted, modified tables/columns with severity levels.
+```bash
+./bin/blast compare snapshot_old.json snapshot_new.json
+# Shows: added=2, deleted=1, modified=3 changes with CRITICAL/WARNING/INFO severity
+```
+
+### 3. **Impact Analysis**
+Compute downstream risk: which tables/dashboards/pipelines are affected by detected changes.
+```bash
+./bin/blast impact snapshot_old.json snapshot_new.json
+# Returns: risk_level, impacted_assets, recommended_actions
+```
+
+### 4. **Release Safety Gate**
+All-in-one pre-deployment check: drift + impact + metadata completeness with exit codes for CI/CD.
+```bash
+./bin/blast release-check --baseline snap1.json --current snap2.json --profile guard.yaml
+# Exits 0 (pass/approved) or 1 (fail/blocked) for pipeline gates
+```
+
+### 5. **Web API Ingestion**
+Fetch records from public JSON APIs, auto-infer column types, load to SQLite, publish to OpenMetadata, and detect schema drift on repeat runs.
+```bash
+./bin/blast ingest web --url https://api.github.com/events --count 100 --service web_service --database webdb --schema public
+```
+
+### 6. **Policy Enforcement**
+Define metadata guards (YAML profiles) that fail releases on violations: drift severity, change counts, missing metadata.
+```yaml
+# profiles/guard/analytics.guard.yaml
+drift:
+  failOn: critical        # Fail only on CRITICAL severity
+  maxTotal: 5             # Allow max 5 total changes
+contracts:
+  minScore: 80            # Metadata completeness score 0-100
+  requireOwner: true      # Owner field required
+  requireTableDescription: true
+```
+
+### 7. **Lineage Inspection**
+Fetch upstream (sources) and downstream (consumers) dependencies for any table.
+```bash
+./bin/blast lineage my_service.my_db.public.my_table
+```
+
+### 8. **AI Agent Access (MCP)**
+Expose all workflows via Model Context Protocol for AI agents to autonomously manage metadata.
+```bash
+./bin/blast mcp --ingestion-dir ./snapshots/ingestion
+# Agents can: discover services, ingest data, detect drift, analyze impact
+```
+
+---
+
+## 🏗️ Architecture & Tech Stack
+
+### **Technology Choices**
+- **Language:** Go (fast, single binary, easy deployment)
+- **CLI:** Cobra framework (battle-tested command parsing)
+- **OpenMetadata Client:** Direct HTTP REST API calls + JWT auth
+- **Storage:** SQLite 3 (web ingestion data) + JSON files (snapshots)
+- **Config:** Viper (env vars + YAML config files)
+- **AI Integration:** Model Context Protocol (stdio-based)
+
+### **System Architecture**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   USER / AI AGENT                       │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+        ┌──────────────┼──────────────┐
+        │              │              │
+        ▼              ▼              ▼
+    ┌────────┐  ┌────────────┐  ┌────────┐
+    │  CLI   │  │  MCP Server│  │ Config │
+    │Commands│  │ (AI Agents)│  │ Files  │
+    └────┬───┘  └─────┬──────┘  └────────┘
+         │            │
+         └─────┬──────┘
+               │
+               ▼
+    ┌──────────────────────────┐
+    │   Blast Radius Core      │
+    │  ─────────────────────   │
+    │ • Snapshot Handler       │
+    │ • Diff/Compare Engine    │
+    │ • Impact Analyzer        │
+    │ • Policy Enforcer        │
+    │ • Web Ingest Orchestrator│
+    └────────┬─────────────────┘
+             │
+    ┌────────┴──────────────┐
+    │                       │
+    ▼                       ▼
+┌──────────────┐    ┌────────────────────┐
+│ OpenMetadata │    │  SQLite / JSON     │
+│   (remote)   │    │  (local storage)   │
+└──────────────┘    └────────────────────┘
+```
+
+### **Command Flow Example: Release Gate**
+
+```
+User: ./bin/blast release-check --baseline snap1.json --current snap2.json
+
+1. Load Snapshots
+   ├─ Parse snap1.json (baseline state)
+   └─ Parse snap2.json (current state)
+
+2. Detect Drift
+   ├─ Compare tables/columns/descriptions
+   ├─ Assign severity (INFO/WARNING/CRITICAL)
+   └─ Count changes by type
+
+3. Analyze Impact
+   ├─ Fetch lineage for affected entities
+   ├─ Compute risk level (LOW/MEDIUM/HIGH/CRITICAL)
+   └─ Identify downstream assets
+
+4. Check Contracts
+   ├─ Count metadata completeness scores
+   ├─ Verify required fields (owner, description)
+   └─ Calculate quality percentage
+
+5. Decide Release
+   ├─ Apply policy profile rules
+   ├─ Compare against thresholds
+   └─ Generate report (JSON + Markdown)
+
+6. Exit with Code
+   ├─ 0 = PASS (release approved)
+   └─ 1 = FAIL (release blocked)
+```
+
+### **Data Flow: Web Ingestion**
+
+```
+Public JSON API → Fetch Records → Infer Schema
+                                      ↓
+                            ┌─────────────────┐
+                            │  SQLite DB      │
+                            │  (local copy)   │
+                            └────────┬────────┘
+                                     ↓
+                        Auto-Create Metadata
+                        (tables, columns, types)
+                                     ↓
+                            ┌─────────────────┐
+                            │ OpenMetadata    │
+                            │ (sync metadata) │
+                            └────────┬────────┘
+                                     ↓
+                          Capture Snapshot
+                            (point-in-time)
+                                     ↓
+                        Compare vs Previous
+                          (detect drift)
+```
+
+---
+
+## 🚀 Getting Started (5 Minutes)
+
+### Prerequisites
+- Go 1.21+
+- Access to OpenMetadata instance (v1.0+)
+- OpenMetadata JWT token (for authentication)
+
+### 1. Build
 
 ```bash
-# 1) Build
+git clone https://github.com/Viswesh934/blast-radius.git
+cd blast-radius
 go build -o bin/blast ./cmd
+```
 
-# 2) Validate OpenMetadata connectivity
+### 2. Configure
+
+Set environment variables or create `.env` file:
+
+```bash
+export OM_BASE_URL="http://localhost:8585/api/v1"  # OpenMetadata endpoint
+export OM_JWT_TOKEN="your-jwt-token"                # Auth token
+export BR_DATABASE_FQN="my_service.my_db.public"   # Default database
+```
+
+Or create `blast-radius.yaml`:
+
+```yaml
+openmetadata:
+  baseurl: "http://localhost:8585/api/v1"
+  jwt_token: "your-jwt-token"
+
+database:
+  fqn: "my_service.my_db.public"
+
+snapshot:
+  directory: "./snapshots"
+
+output:
+  format: "table"
+```
+
+### 3. Verify Setup
+
+```bash
 ./bin/blast validate
+# Output: OpenMetadata connectivity verified ✓
+```
 
-# 3) Run guided ingest (best for demos)
+### 4. Run Your First Demo
+
+```bash
+# Option A: Interactive menu (explore features at your pace)
+python3 examples/demo-interactive.py
+
+# Option B: Automated complete walkthrough (5-10 min)
+bash examples/full-demo.sh
+
+# Option C: Quick release gate demo (2-3 min)
+bash examples/release_gate_demo.sh
+```
+
+---
+
+## 📖 Usage Examples
+
+### **Capture Metadata Snapshot**
+```bash
+./bin/blast snapshot --source my_service.my_db.public
+# Creates: snapshots/sources/my_service/my_db/public/snapshot_<timestamp>.json
+```
+
+### **Compare Two Snapshots**
+```bash
+./bin/blast compare \
+  snapshots/sources/my_service/my_db/public/snapshot_OLD.json \
+  snapshots/sources/my_service/my_db/public/snapshot_NEW.json
+
+# Output:
+# Change summary:
+#   added: 3
+#   deleted: 1
+#   modified: 5
+#   affected_tables: 2
+```
+
+### **Analyze Downstream Impact**
+```bash
+./bin/blast impact snapshot_old.json snapshot_new.json
+
+# Output:
+# risk_level: HIGH
+# impacted_assets: 7
+#   - my_dashboard (DASHBOARD) - column type changed
+#   - etl_pipeline_v2 (PIPELINE) - upstream dependency
+# recommended_actions:
+#   - Notify dashboard owners
+#   - Run data quality checks
+#   - Update downstream schemas
+```
+
+### **Release Gate (CI/CD Integration)**
+```bash
+./bin/blast release-check \
+  --baseline snapshots/baseline.json \
+  --current snapshots/current.json \
+  --profile profiles/guard/analytics.guard.yaml \
+  --report-file release_report.json \
+  --markdown-file release_report.md
+
+# Exit code 0 = PASS (approved), 1 = FAIL (blocked)
+cat release_report.md  # Business-friendly summary
+```
+
+### **Ingest from Public API**
+```bash
+# Interactive wizard (recommended)
 ./bin/blast ingest wizard
 
-# 4) Or run non-interactive ingest from a drifting source
+# OR non-interactive
 ./bin/blast ingest web \
-	--url https://api.github.com/events \
-	--count 100 \
-	--table github_events \
-	--service <existing_service> \
-	--database webdb \
-	--schema public \
-	--source <existing_service>.webdb.public
+  --url https://api.github.com/events \
+  --count 100 \
+  --table github_events \
+  --service web_service \
+  --database webdb \
+  --schema public
 
-# 5) Re-run later (same command) to produce drift against previous snapshot
+# Run again to detect schema drift
 ./bin/blast ingest web \
-	--url https://api.github.com/events \
-	--count 100 \
-	--table github_events \
-	--service <existing_service> \
-	--database webdb \
-	--schema public \
-	--source <existing_service>.webdb.public
-
-# 6) Optional explicit compare + impact
-./bin/blast compare <older_snapshot.json> <newer_snapshot.json>
-./bin/blast impact <older_snapshot.json> <newer_snapshot.json>
+  --url https://api.github.com/events \
+  --count 100 \
+  --table github_events \
+  --service web_service \
+  --database webdb \
+  --schema public
 ```
 
-## MCP Demo (AI Agent Flow)
+### **Drift Detection with Policies**
+```bash
+./bin/blast guard drift \
+  baseline_snapshot.json \
+  current_snapshot.json \
+  --fail-on critical \
+  --max-total 5 \
+  --profile profiles/guard/analytics.guard.yaml
+
+# Exit 0 if no violations, 1 if policy broken
+```
+
+### **Fetch Metadata Lineage**
+```bash
+./bin/blast lineage my_service.my_db.public.my_table
+
+# Output:
+# upstream:
+#   - source_system.raw_db.raw_table
+# downstream:
+#   - analytics.marts.customer_summary
+#   - reporting_dashboard.views.top_customers
+```
+
+### **Discover Catalog**
+```bash
+./bin/blast services                                    # List all services
+./bin/blast databases --service my_service             # List databases in service
+./bin/blast tables my_service.my_db.public             # List tables in database
+./bin/blast tables get my_service.my_db.public.events  # Get table details
+```
+
+---
+
+## 🤖 AI Integration (MCP Protocol)
+
+Run Blast Radius as an MCP server for AI agents (Claude, etc.):
 
 ```bash
-# Start MCP server
+# Terminal 1: Start MCP server
 ./bin/blast mcp --ingestion-dir ./snapshots/ingestion
 
-# In another terminal: run MCP smoke/demo client
-python3 examples/mcp_demo.py --run-web-sync --service <existing_service>
+# Terminal 2: Test with demo client
+python3 examples/mcp_demo.py --run-web-sync --service my_service
 ```
 
-What this demonstrates:
+**Exposed Tools:**
+- `blast_snapshot` - Capture metadata snapshot
+- `blast_compare` - Compare two snapshots
+- `blast_impact` - Analyze impact
+- `blast_web_ingest_sync` - Ingest API data + detect drift
+- `blast_service_discovery` - List available services
+- `blast_release_check` - Run safety gate
 
-- Service discovery for valid OpenMetadata targets.
-- Agent-driven web ingest and metadata sync.
-- Snapshot drift output that can be used for release decisions.
+**What agents can do:**
+- Autonomously detect metadata drift
+- Ingest external data and sync to OpenMetadata
+- Recommend remediation actions
+- Generate release approval reports
+- Monitor metadata health continuously
 
-## Commands
+---
+
+## 🛠️ Complete Command Reference
+
+For detailed command reference, see [DEMO_QUICK_REFERENCE.md](DEMO_QUICK_REFERENCE.md)
+
+**Quick examples:**
+```bash
+# Core operations
+./bin/blast validate                                    # Check connectivity
+./bin/blast snapshot --source db.schema                # Capture metadata
+./bin/blast compare snap1.json snap2.json              # Find differences
+./bin/blast impact snap1.json snap2.json               # Assess risk
+./bin/blast release-check --baseline ... --current ... # Pre-release gate
+
+# Discovery
+./bin/blast services                                    # List services
+./bin/blast databases --service X                      # List databases
+./bin/blast tables my_service.db.schema                # List tables
+./bin/blast lineage my_service.db.schema.table         # Show lineage
+
+# Ingestion
+./bin/blast ingest wizard                              # Interactive guide
+./bin/blast ingest web --url ... --service ...         # Web API ingest
+
+# Governance
+./bin/blast guard drift snap1.json snap2.json          # Drift check
+./bin/blast guard contracts snapshot.json              # Metadata quality
+
+# Advanced
+./bin/blast api --method GET --path /services          # Direct API calls
+./bin/blast mcp                                        # Start MCP server
+```
+
+---
+
+## 📚 Demos & Resources
+
+### Quick Navigation
+- **Getting started?** → Start with `python3 examples/demo-interactive.py`
+- **Need a reference?** → See [DEMO_QUICK_REFERENCE.md](DEMO_QUICK_REFERENCE.md)
+- **Showing to others?** → Run `bash examples/full-demo.sh`
+- **Learning patterns?** → Check [DEMO_SNIPPETS.md](DEMO_SNIPPETS.md) (18 examples)
+- **Integration patterns?** → See `examples/integration-examples.sh` (GitHub Actions, K8s, Airflow, etc.)
+
+### Demo Scripts
+
+| Script | Duration | Use Case |
+|--------|----------|----------|
+| `examples/demo-interactive.py` | 15-30 min | Hands-on learning, menu-driven exploration |
+| `examples/full-demo.sh` | 5-10 min | Automated walkthrough, presentations |
+| `examples/release_gate_demo.sh` | 2-3 min | Fast demo with pre-captured snapshots |
+| `examples/integration-examples.sh` | Reference | CI/CD integrations (GitHub, GitLab, K8s, etc.) |
+
+### Complete Resource Guide
+See [DEMO_RESOURCES.md](DEMO_RESOURCES.md) for detailed breakdown of all demos and how to customize them.
+
+---
+
+## 📋 Configuration
+
+### Environment Variables (Highest Priority)
 
 ```bash
-blast validate
-blast validate --output json
-blast services
-blast databases --service my_service
-blast tables [database-fqn]
-blast tables create --name events --schema service.database.schema
-blast tables get service.database.schema.table
-blast tables add-data service.database.schema.table --body-file examples/payloads/table-sample-data.patch.json
-blast tables delete service.database.schema.table
-blast tables update service.database.schema.table --body-file table-update.json
-blast snapshot
-blast guard drift <baseline-snapshot.json> <current-snapshot.json>
-blast guard drift <baseline-snapshot.json> --source service.database.schema
-blast guard contracts [snapshot.json]
-blast guard contracts --source service.database.schema
-blast guard profile validate profiles/guard/analytics.guard.yaml
-blast guard profile show profiles/guard/analytics.guard.yaml
-blast lineage <entity-fqn>
-blast compare <older-snapshot.json> <newer-snapshot.json>
-blast impact <older-snapshot.json> <newer-snapshot.json>
-blast demo
-blast ingest web --url https://jsonplaceholder.typicode.com/posts --table posts --service web_service --database webdb --schema public
-blast ingest wizard
-blast release-check --baseline snapshots/sources/my_service/analytics/public/snapshot_1776536091.json --source my_service.analytics.public --profile profiles/guard/analytics.guard.yaml
-blast mcp
-blast create service --name my_service --type Postgres
-blast create database --name analytics --service my_service
-blast create schema --name public --database my_service.analytics
-blast create table --name events --schema my_service.analytics.public
-blast create table --payload-file examples/payloads/create-table.minimal.json
-blast api --method GET --path /services/databaseServices
-blast glossary list
-blast glossary create --name finance --description "Finance definitions"
-blast glossary term create --glossary finance --name pii --description "Personally identifiable information"
+# Required
+OM_BASE_URL="http://localhost:8585/api/v1"    # OpenMetadata endpoint (MUST include /api/v1)
+OM_JWT_TOKEN="your-jwt-token"                  # Auth token
+
+# Optional (defaults below)
+BR_DATABASE_FQN="postgres_default.public"      # Default database
+BR_SNAPSHOT_DIRECTORY="./snapshots"            # Where to store snapshots
+BR_OUTPUT_FORMAT="table"                       # "table" or "json"
 ```
 
-Command aliases:
+### Config File (`.yaml` or `.yaml.example`)
 
-- `blast tables` also supports `blast table`, `blast ls`, and `blast catalog`.
-- `blast tables get` also supports `show`, `describe`, and `inspect`.
-- `blast tables delete` also supports `rm` and `remove`.
-- `blast tables update` also supports `edit` and `patch`.
-- `blast tables add-data` updates OpenMetadata sample/metadata payloads, not physical source DB rows.
-- `blast glossary` also supports `blast glossaries`.
-- `blast glossary term` also supports `blast glossary terms`.
-- `blast create table` supports `--payload` and `--payload-file` for OpenMetadata table JSON.
-- Most wrapper commands support `--output json` for machine-friendly output.
+```yaml
+openmetadata:
+  baseurl: "http://localhost:8585/api/v1"
+  jwt_token: "your-jwt-token"
 
-## Examples
+database:
+  fqn: "postgres_default.public"
 
-Use these patterns when you want to stay entirely inside OpenMetadata:
+snapshot:
+  directory: "./snapshots"
 
+output:
+  format: "table"  # or "json"
+```
+
+### Priority Order
+1. Command-line flags
+2. Environment variables (`OM_*`, `BR_*`)
+3. Config file (`blast-radius.yaml`)
+4. Defaults
+
+---
+
+## 📂 Project Structure
+
+```
+Blast-Radius/
+├── cmd/
+│   ├── main.go                          # Entry point
+│   └── commands/                        # CLI commands
+│       ├── snapshot.go                  # Snapshot capture
+│       ├── compare.go                   # Snapshot comparison
+│       ├── impact.go                    # Impact analysis
+│       ├── guard.go                     # Drift detection & policies
+│       ├── release_check.go             # Release gate
+│       ├── ingest_web.go                # Web API ingestion
+│       ├── lineage.go                   # Lineage fetch
+│       ├── mcp.go                       # MCP server
+│       ├── services.go, tables.go, ...  # Discovery commands
+│       └── root.go                      # Root command setup
+│
+├── internal/
+│   ├── config/
+│   │   └── config.go                    # Config loading (env + file)
+│   ├── openmetadata/
+│   │   ├── client.go                    # HTTP REST API client
+│   │   └── entities.go                  # Entity structures
+│   ├── snapshot/
+│   │   ├── snapshot.go                  # Snapshot creation
+│   │   ├── diff.go                      # Comparison logic
+│   │   └── storage.go                   # File I/O
+│   ├── impact/
+│   │   └── analyzer.go                  # Impact computation
+│   └── mcp/
+│       ├── server.go                    # MCP protocol handler
+│       ├── protocol.go                  # MCP messages
+│       └── ingestion.go                 # Ingestion tools
+│
+├── pkg/
+│   └── netfetch/
+│       └── client.go                    # HTTP fetcher for web APIs
+│
+├── examples/
+│   ├── full-demo.sh                     # Complete walkthrough
+│   ├── demo-interactive.py              # Interactive menu
+│   ├── release_gate_demo.sh             # Fast demo
+│   ├── integration-examples.sh          # Integration patterns
+│   ├── mcp_demo.py                      # AI agent demo
+│   └── payloads/                        # Example OpenMetadata payloads
+│
+├── profiles/guard/                      # Policy profiles (YAML)
+│   ├── analytics.guard.yaml             # Example: analytics policies
+│   └── finance.guard.yaml               # Example: finance policies
+│
+├── artifacts/                           # Demo artifacts
+├── snapshots/                           # Saved metadata snapshots
+│
+├── DEMO_START_HERE.md                   # Quick start guide
+├── DEMO_RESOURCES.md                    # Complete demo guide
+├── DEMO_QUICK_REFERENCE.md              # One-page cheat sheet
+├── DEMO_SNIPPETS.md                     # Copy-paste examples
+│
+├── go.mod && go.sum                     # Go dependencies
+├── blast-radius.yaml.example            # Config template
+├── .env.example                         # Env vars template
+└── README.md                            # This file
+```
+
+---
+
+## 🎓 Learning & Growth
+
+### For Users
+
+**Getting Started:**
+1. Read: [DEMO_START_HERE.md](DEMO_START_HERE.md)
+2. Run: `python3 examples/demo-interactive.py`
+3. Reference: [DEMO_QUICK_REFERENCE.md](DEMO_QUICK_REFERENCE.md)
+4. Copy: [DEMO_SNIPPETS.md](DEMO_SNIPPETS.md)
+
+**Advanced Usage:**
+- Create custom policy profiles (profiles/guard/*.yaml)
+- Write integration scripts (see examples/integration-examples.sh)
+- Extend MCP tools for AI agents
+- Build CI/CD pipelines using release-check
+
+### For Developers
+
+**Key Concepts to Understand:**
+- OpenMetadata entity model (services → databases → schemas → tables)
+- Snapshot format (JSON structure with lineage + metadata)
+- Risk scoring (how impact analyzer works)
+- Policy evaluation (guard profile syntax)
+- MCP protocol (stdio-based tool discovery)
+
+**Code Entry Points:**
+- `cmd/commands/root.go` - CLI command registration
+- `internal/openmetadata/client.go` - API integration
+- `internal/snapshot/snapshot.go` - Snapshot creation logic
+- `internal/snapshot/diff.go` - Comparison engine
+- `internal/impact/analyzer.go` - Impact computation
+- `internal/mcp/server.go` - MCP protocol
+
+**Adding New Features:**
+1. Create new command in `cmd/commands/your_feature.go`
+2. Register in `cmd/commands/root.go`
+3. Implement business logic in `internal/`
+4. Add tests in `*_test.go` files
+5. Document in [DEMO_SNIPPETS.md](DEMO_SNIPPETS.md)
+
+### Roadmap Ideas
+
+- [ ] Support more metadata sources (Collate, Apache Atlas, etc.)
+- [ ] Extended policy language (conditional rules, state machines)
+- [ ] Scheduled drift checks (background service mode)
+- [ ] Metadata diff visualization (web UI)
+- [ ] Slack/email notifications on release block
+- [ ] Historical drift analytics / trends
+- [ ] Terraform provider for policy management
+- [ ] Multi-environment metadata sync
+
+### Contributing
+
+Pull requests welcome! Areas of interest:
+- New OpenMetadata entity types
+- Additional policy rule types
+- Integration examples
+- Documentation improvements
+- Performance optimizations
+
+---
+
+## 🆘 Troubleshooting
+
+### **Error: "invalid character '<' looking for beginning of value"**
+**Cause:** `OM_BASE_URL` missing `/api/v1` endpoint
+
+**Fix:**
 ```bash
-# Create a service, then create a database and schema under it
-blast create service --name analytics_service --type Postgres
-blast create database --name analytics --service analytics_service
-blast create schema --name public --database analytics_service.analytics
+# Wrong:
+export OM_BASE_URL="http://localhost:8585"
 
-# Discover metadata
-blast services
-blast databases --service analytics_service
-blast tables create --name events --schema analytics_service.analytics.public
-blast tables analytics_service.analytics.public
-blast tables get analytics_service.analytics.public.events
-blast tables add-data analytics_service.analytics.public.events --body-file examples/payloads/table-sample-data.patch.json
-blast tables update analytics_service.analytics.public.events --body-file table-update.json
-blast tables --output json analytics_service.analytics.public
-
-# Work with glossaries
-blast glossary create --name finance --description "Finance definitions"
-blast glossary term create --glossary finance --name pii --description "Sensitive personal data"
-blast glossary list
-blast glossary list --glossary finance
-
-# Call an OpenMetadata endpoint directly
-blast api --method GET --path /glossaries
-
-# Use bundled payload examples
-blast create service --payload-file examples/payloads/create-service.postgres.json
-blast create table --payload-file examples/payloads/create-table.minimal.json
-blast tables update analytics_service.analytics.public.events --body-file examples/payloads/update-table-description.patch.json
+# Correct:
+export OM_BASE_URL="http://localhost:8585/api/v1"
 ```
 
-## Glossary
+### **Error: "unauthorized" or "invalid token"**
+**Cause:** JWT token expired or invalid
 
-- `service`: an OpenMetadata database service, such as Postgres or Snowflake.
-- `database`: a logical database owned by a service in OpenMetadata.
-- `schema`: a database schema that belongs to a database.
-- `glossary`: a top-level vocabulary container for business terms.
-- `glossary term`: a term inside a glossary, optionally nested under a parent term.
-- `entity FQN`: a fully qualified OpenMetadata name, such as `service.database.schema`.
+**Fix:**
+1. Generate new token in OpenMetadata UI (Settings → Integrations → Ingestion)
+2. Update `OM_JWT_TOKEN` environment variable
 
-## Configuration
+### **Error: "database FQN not found"**
+**Cause:** Database doesn't exist in OpenMetadata
 
-Use either environment variables or a local config file.
+**Fix:**
+1. Verify database name: `./bin/blast databases --service <service_name>`
+2. Create missing database: `./bin/blast create database --name <db> --service <service>`
 
-Required for OpenMetadata workflows:
+### **No snapshots being created**
+**Cause:** Snapshot directory doesn't exist or permissions issue
 
-- `OM_BASE_URL` (should include `/api/v1`)
-- `OM_JWT_TOKEN` (if your OpenMetadata deployment requires auth)
-- `BR_DATABASE_FQN` (default database FQN used by `snapshot`, `tables`, and `validate`)
-
-Optional:
-
-- `BR_SNAPSHOT_DIRECTORY` (default: `./snapshots`)
-- `BR_OUTPUT_FORMAT` (`table` or `json`)
-
-Example files:
-
-- `.env.example`
-- `blast-radius.yaml.example`
-
-## Build and Run
-
+**Fix:**
 ```bash
-go mod tidy
-go build -o bin/blast ./cmd
-./bin/blast --help
+mkdir -p ./snapshots
+chmod 755 ./snapshots
+./bin/blast snapshot --source my_service.my_db.public  # Try again
 ```
 
-Optional local alias if you still build `bin/blast-radius`:
+---
 
-```bash
-ln -sf "$PWD/bin/blast-radius" "$HOME/.local/bin/blast"
-```
+## 📄 License
 
-## Internet Fetch Library + Demo App
+MIT License - see [LICENSE](LICENSE) file
 
-This repo now includes a reusable internet fetch library and a demo app:
+---
 
-- Library package: `pkg/netfetch`
-- Demo executable: `cmd/fetch-demo`
+## 🙋 Support & Feedback
 
-Run the demo app:
-
-```bash
-go run ./cmd/fetch-demo
-```
-
-The demo calls the GitHub API for this repository and prints a JSON summary.
-
-## Web Ingestion To DB + OpenMetadata
-
-Use this when you want end-to-end web metadata ingestion with automatic field inference, local DB writes, OpenMetadata registration, and drift checks.
-
-```bash
-blast ingest web \
-	--url https://jsonplaceholder.typicode.com/posts \
-	--table posts \
-	--service web_service \
-	--database webdb \
-	--schema public
-
-# Guided mode (prompts for URL, records, table, service, database, schema, and snapshot source)
-blast ingest wizard
-```
-
-Notes:
-
-- If `--count` is omitted, Blast asks interactively how many records to ingest.
-- It infers fields from JSON records and creates columns automatically.
-- Records are inserted into SQLite (`--db-file`, default `./artifacts/ingested_web.db`).
-- It ensures service/database/schema/table exist in OpenMetadata, pushes sample data, captures a new snapshot, and compares drift against the previous snapshot for the same source.
-- If the selected OpenMetadata service is missing, Blast shows existing services and asks permission before trying to create a new one (interactive terminals).
-
-## Typical Workflow
-
-```bash
-# 1. Validate connectivity and config
-./bin/blast validate
-
-# 2. List tables visible in OpenMetadata
-./bin/blast tables
-
-# 2b. Discover existing services and databases
-./bin/blast services
-./bin/blast databases --service my_service
-
-# 2c. Create entities in OpenMetadata (no Postgres dependency)
-./bin/blast create service --name my_service --type Postgres
-./bin/blast create database --name analytics --service my_service
-./bin/blast create schema --name public --database my_service.analytics
-./bin/blast create table --name events --schema my_service.analytics.public
-
-# 2d. Create glossary content
-./bin/blast glossary create --name finance --description "Finance definitions"
-./bin/blast glossary term create --glossary finance --name pii --description "Sensitive personal data"
-
-# 3. Capture snapshots over time
-./bin/blast snapshot
-# or target a different source without changing .env
-./bin/blast snapshot --source my_service.analytics.public
-# ... later
-./bin/blast snapshot
-
-# 3b. Run metadata drift and contract readiness guards
-./bin/blast guard drift snapshots/sources/my_service/analytics/public/snapshot_older.json snapshots/sources/my_service/analytics/public/snapshot_newer.json
-./bin/blast guard drift snapshots/sources/my_service/analytics/public/snapshot_older.json --source my_service.analytics.public
-./bin/blast guard contracts snapshots/sources/my_service/analytics/public/snapshot_newer.json
-./bin/blast guard contracts --source my_service.analytics.public --min-score 70
-
-# 3c. Use versioned guard profiles per domain
-./bin/blast guard profile validate profiles/guard/analytics.guard.yaml
-./bin/blast guard profile show profiles/guard/analytics.guard.yaml
-./bin/blast guard drift snapshots/sources/my_service/analytics/public/snapshot_older.json snapshots/sources/my_service/analytics/public/snapshot_newer.json --profile profiles/guard/analytics.guard.yaml
-./bin/blast guard contracts --source my_service.analytics.public --profile profiles/guard/analytics.guard.yaml
-
-# 4. Compare two snapshots
-./bin/blast compare snapshots/sources/my_service/analytics/public/snapshot_older.json snapshots/sources/my_service/analytics/public/snapshot_newer.json
-
-# 5. Analyze impact from differences
-./bin/blast impact snapshots/older.json snapshots/newer.json
-
-# 5b. Run a CI-friendly release gate check
-./bin/blast release-check \
-	--baseline snapshots/sources/my_service/analytics/public/snapshot_1776536091.json \
-	--source my_service.analytics.public \
-	--profile profiles/guard/analytics.guard.yaml \
-	--max-risk high \
-	--report-file artifacts/release-check.json \
-	--markdown-file artifacts/release-check.md
-
-# 6. Inspect lineage for an entity directly from OpenMetadata
-./bin/blast lineage service.db.schema.table_name
-
-# 7. Inspect, update, or delete a table
-./bin/blast tables create --name events --schema analytics_service.analytics.public
-./bin/blast tables get analytics_service.analytics.public.events
-./bin/blast tables add-data analytics_service.analytics.public.events --body-file examples/payloads/table-sample-data.patch.json
-./bin/blast tables update analytics_service.analytics.public.events --body-file table-update.json
-./bin/blast tables delete analytics_service.analytics.public.events
-
-# 8. Run as an MCP server for AI agents and ingestion clients
-./bin/blast mcp --ingestion-dir ./snapshots/ingestion
-```
-
-## MCP Server + Ingestion Pipeline
-
-Blast Radius can run as an MCP server over stdio so external agents and automation can trigger metadata workflows in real time.
-
-Start server:
-
-```bash
-./bin/blast mcp --ingestion-dir ./snapshots/ingestion
-```
-
-Exposed MCP tools:
-
-- `blast.snapshot.capture`: create a new snapshot from OpenMetadata.
-- `blast.snapshot.compare`: compare two snapshot files.
-- `blast.impact.analyze`: compute downstream impact between snapshots.
-- `blast.ingest.event`: append a real-time event into the ingestion queue.
-- `blast.ingest.flush`: flush queued events for a source, capture a snapshot, compare against a baseline, and emit an impact report.
-- `blast.openmetadata.services.list`: list available OpenMetadata database services for parameter planning.
-- `blast.ingest.web.sync`: run end-to-end web JSON ingestion (fetch -> infer -> SQLite -> OpenMetadata -> snapshot drift).
-
-Ingestion outputs:
-
-- Event log: `snapshots/ingestion/events.ndjson`
-- Flush reports: `snapshots/ingestion/reports/report_<timestamp>.json`
-
-Notes:
-
-- `blast.ingest.event` requires `type` and `source_fqn`.
-- `blast.ingest.flush` can take an explicit `baseline_snapshot`; if omitted, it uses the latest prior snapshot for that source.
-- If no baseline snapshot exists, flush still captures a fresh snapshot and returns a message indicating compare/impact was skipped.
-- `blast.ingest.web.sync` requires `url`, `table`, `service`, `database`, and `schema`; set `allow_create_service=true` if agents are allowed to create missing services.
-
-## CI/CD Release Gate
-
-Use `release-check` to gate deploys and pull requests with one deterministic command.
-
-Example:
-
-```bash
-./bin/blast release-check \
-	--baseline snapshots/sources/my_service/analytics/public/snapshot_1776536091.json \
-	--source my_service.analytics.public \
-	--profile profiles/guard/analytics.guard.yaml \
-	--max-risk high \
-	--max-impacted-assets 20 \
-	--report-file artifacts/release-check.json \
-	--markdown-file artifacts/release-check.md
-```
-
-Behavior:
-
-- Runs drift policy checks (`fail_on`, `max_total`).
-- Runs contract readiness checks (`min_score`, owner/description policy).
-- Runs impact checks (`max_risk`, optional `max_impacted_assets`).
-- Exits non-zero when any policy check fails.
-
-GitHub Actions workflow:
-
-- See `.github/workflows/metadata-release-gate.yml`.
-- Configure repository secrets: `OM_BASE_URL`, `OM_JWT_TOKEN`.
-- Configure repository variables: `BR_DATABASE_FQN`, `BASELINE_SNAPSHOT`.
-
-## Notes
-
-- Snapshot and lineage retrieval are OpenMetadata API-driven.
-- `guard drift` is CI-friendly and can compare two snapshot files or compare a baseline file to a live OpenMetadata source (`--source`).
-- `guard contracts` scores metadata contract readiness (descriptions, columns, datatypes) from a snapshot file or live source.
-- `guard profile validate` and `guard profile show` let teams verify and inspect versioned `guard.yaml` policy files.
-- `guard drift --profile` and `guard contracts --profile` apply domain policy from a versioned profile file.
-- `snapshot` writes one aggregate snapshot under `snapshots/sources/<source-fqn-path>/` and one per-table snapshot under `snapshots/tables/<table-fqn-path>/`.
-- Use `snapshot --source <fqn>` to snapshot a different source at runtime without changing environment variables.
-- Compare and impact operate on saved snapshot JSON files.
-- If `BR_OUTPUT_FORMAT=json`, compare and impact commands print JSON output.
-- `create service` supports `--payload` and `--payload-file` for full OpenMetadata service JSON.
-- `create table` supports `--payload` and `--payload-file` for full OpenMetadata table JSON.
-- `tables create` supports `--payload` and `--payload-file` for full OpenMetadata table JSON.
-- `tables add-data` supports `--body` and `--body-file` for sample data metadata updates.
-- `tables update` supports `--body` and `--body-file` so you can use the exact OpenMetadata update payload your deployment expects.
-- Use `--output json` on wrapper commands when scripting automation.
-- Use `blast api` for operations that are not yet wrapped by dedicated commands.
-- The effort and roadmap discussion lives in [docs/openmetadata-wrapper-effort.md](docs/openmetadata-wrapper-effort.md).
-- The effort-1 validation checklist lives in [docs/effort1-smoke-checklist.md](docs/effort1-smoke-checklist.md).
-- The effort-2 release gate checklist lives in [docs/effort2-release-gate-checklist.md](docs/effort2-release-gate-checklist.md).
+- **Issues:** GitHub Issues
+- **Discussions:** GitHub Discussions
+- **Examples:** See [DEMO_SNIPPETS.md](DEMO_SNIPPETS.md)
+- **Integration help:** See [examples/integration-examples.sh](examples/integration-examples.sh)
